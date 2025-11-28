@@ -1,0 +1,9 @@
+# Fichiers générés
+*.o
+*.class
+*.exe
+*.out
+*.a
+*.so
+*.d
+build/
