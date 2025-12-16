@@ -2,27 +2,78 @@
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
+#include <stdio.h>
 
 void initialiserJeu(Jeu *p, int niveau) {
-    p->score = 0;
-    p->vies = 3;
+    // NOTE : On NE remet PAS p->score à 0 ici pour le conserver entre les niveaux.
+    // L'initialisation du score à 0 se fait au tout début du main().
+    
     p->niveauActuel = niveau;
-    p->coupsRestants = 20; // Réduit car la grille est plus petite
+    
+    if (niveau == 1) {
+        p->vies = 3;
+    }
+
     p->curseurX = COLONNES / 2;
     p->curseurY = LIGNES / 2;
     p->aSelectionneUneCase = 0;
+
+    // --- RESET COMPTEURS ---
+    for(int i=0; i<6; i++) {
+        p->objectifs[i] = 0;
+        p->collecte[i] = 0;
+    }
+
+    // --- CONTRAT DYNAMIQUE ---
+    int totalItemsRequis = 15 + (niveau * 5);
+    int nbTypesCibles = (niveau >= 3) ? 3 : 2;
+    if (niveau >= 6) nbTypesCibles = 4;
+
+    int fruitsPossibles[5] = {FRAISE, OIGNON, MANDARINE, MYRTILLE, CITRON};
+    for (int i = 0; i < 5; i++) {
+        int r = rand() % 5;
+        int temp = fruitsPossibles[i];
+        fruitsPossibles[i] = fruitsPossibles[r];
+        fruitsPossibles[r] = temp;
+    }
+
+    int reste = totalItemsRequis;
+    for (int i = 0; i < nbTypesCibles; i++) {
+        if (i == nbTypesCibles - 1) {
+            p->objectifs[fruitsPossibles[i]] = reste;
+        } else {
+            int min = 5;
+            int max = reste - (5 * (nbTypesCibles - 1 - i)); 
+            if (max < min) max = min;
+            int part = min + (rand() % (max - min + 1));
+            p->objectifs[fruitsPossibles[i]] = part;
+            reste -= part;
+        }
+    }
+
+    int margeCoups = 15 - niveau; 
+    if (margeCoups < 5) margeCoups = 5; 
+    p->coupsRestants = totalItemsRequis + margeCoups;
+    p->dureeMax = 30 + (totalItemsRequis * 3);
+
+    p->tempsDebut = time(NULL);
     genererNiveau(p);
 
-    // On s'assure qu'au début, il n'y a pas déjà des alignements
+    // Nettoyage initial sans points
     while (verifierAlignements(p)) {
-        supprimerItems(p);
+        for (int i = 0; i < LIGNES; i++) {
+            for (int j = 0; j < COLONNES; j++) {
+                if (p->plateau[i][j].aSupprimer) {
+                    p->plateau[i][j].type = VIDE;
+                    p->plateau[i][j].aSupprimer = 0;
+                }
+            }
+        }
         appliquerGravite(p);
-        p->score = 0; // On remet le score à 0 après le nettoyage initial
     }
 }
 
 void genererNiveau(Jeu *p) {
-    srand((unsigned)time(NULL));
     for (int i = 0; i < LIGNES; i++) {
         for (int j = 0; j < COLONNES; j++) {
             p->plateau[i][j].type = (rand() % 5) + 1;
@@ -33,41 +84,125 @@ void genererNiveau(Jeu *p) {
 }
 
 int permuterItems(Jeu *p, int x1, int y1, int x2, int y2) {
-    // 1. On fait l'échange
     TypeItem temp = p->plateau[y1][x1].type;
     p->plateau[y1][x1].type = p->plateau[y2][x2].type;
     p->plateau[y2][x2].type = temp;
 
-    // 2. On vérifie si cet échange crée un alignement
     if (verifierAlignements(p)) {
-        // C'est un bon coup !
-        p->coupsRestants--;
-        return 1; // Succès
+        p->coupsRestants--; 
+        return 1;
     } else {
-        // Mauvais coup : on annule l'échange (retour à la position initiale)
         temp = p->plateau[y1][x1].type;
         p->plateau[y1][x1].type = p->plateau[y2][x2].type;
         p->plateau[y2][x2].type = temp;
-        return 0; // Echec
+        return 0;
     }
 }
 
-// Détecte les lignes de 3 ou plus
 int verifierAlignements(Jeu *p) {
     int matchTrouve = 0;
 
-    // Réinitialiser les marqueurs
+    // Réinitialisation des marqueurs
     for(int y=0; y<LIGNES; y++)
         for(int x=0; x<COLONNES; x++)
             p->plateau[y][x].aSupprimer = 0;
 
-    // 1. Vérification Horizontale
+    // ==========================================================
+    // 1. DETECTION DES FIGURES SPECIALES
+    // ==========================================================
+
+    // --- A. LIGNE DE 6 (Horizontal & Vertical) ---
+    // Effet : Disparition de TOUS les items de ce type sur le plateau
+    
+    // Horizontal
+    for (int y = 0; y < LIGNES; y++) {
+        for (int x = 0; x <= COLONNES - 6; x++) {
+            TypeItem t = p->plateau[y][x].type;
+            if (t != VIDE && t != MUR) {
+                int k = 1;
+                while (x + k < COLONNES && p->plateau[y][x+k].type == t) k++;
+                if (k >= 6) { // Suite de 6 ou plus trouvée
+                    // Marquer tous les items de ce type sur tout le plateau
+                    for(int i=0; i<LIGNES; i++)
+                        for(int j=0; j<COLONNES; j++)
+                            if(p->plateau[i][j].type == t) p->plateau[i][j].aSupprimer = 1;
+                    matchTrouve = 1;
+                }
+            }
+        }
+    }
+    // Vertical
+    for (int x = 0; x < COLONNES; x++) {
+        for (int y = 0; y <= LIGNES - 6; y++) {
+            TypeItem t = p->plateau[y][x].type;
+            if (t != VIDE && t != MUR) {
+                int k = 1;
+                while (y + k < LIGNES && p->plateau[y+k][x].type == t) k++;
+                if (k >= 6) {
+                    for(int i=0; i<LIGNES; i++)
+                        for(int j=0; j<COLONNES; j++)
+                            if(p->plateau[i][j].type == t) p->plateau[i][j].aSupprimer = 1;
+                    matchTrouve = 1;
+                }
+            }
+        }
+    }
+
+    // --- B. CROIX DE 9 (Centre + 4 dans chaque direction) ---
+    // Effet : Disparition des items de ce type sur la ligne ET la colonne du centre
+    // Le centre doit être à au moins 2 cases des bords (index 2 à 7 pour taille 10)
+    for (int y = 2; y < LIGNES - 2; y++) {
+        for (int x = 2; x < COLONNES - 2; x++) {
+            TypeItem t = p->plateau[y][x].type;
+            if (t != VIDE && t != MUR) {
+                if (p->plateau[y][x-1].type == t && p->plateau[y][x-2].type == t &&
+                    p->plateau[y][x+1].type == t && p->plateau[y][x+2].type == t &&
+                    p->plateau[y-1][x].type == t && p->plateau[y-2][x].type == t &&
+                    p->plateau[y+1][x].type == t && p->plateau[y+2][x].type == t) {
+                    
+                    // Marquer la ligne Y et la colonne X (pour ce type)
+                    for(int k=0; k<COLONNES; k++) if(p->plateau[y][k].type == t) p->plateau[y][k].aSupprimer = 1;
+                    for(int k=0; k<LIGNES; k++) if(p->plateau[k][x].type == t) p->plateau[k][x].aSupprimer = 1;
+                    matchTrouve = 1;
+                }
+            }
+        }
+    }
+
+    // --- C. CARRE 4x4 ---
+    // Effet : Disparition des items du carré
+    for (int y = 0; y <= LIGNES - 4; y++) {
+        for (int x = 0; x <= COLONNES - 4; x++) {
+            TypeItem t = p->plateau[y][x].type;
+            if (t != VIDE && t != MUR) {
+                int estCarre = 1;
+                for(int dy=0; dy<4; dy++) {
+                    for(int dx=0; dx<4; dx++) {
+                        if (p->plateau[y+dy][x+dx].type != t) estCarre = 0;
+                    }
+                }
+                if (estCarre) {
+                    for(int dy=0; dy<4; dy++) 
+                        for(int dx=0; dx<4; dx++) 
+                            p->plateau[y+dy][x+dx].aSupprimer = 1;
+                    matchTrouve = 1;
+                }
+            }
+        }
+    }
+
+    // ==========================================================
+    // 2. DETECTION STANDARD (Lignes de 3, 4, 5...)
+    // ==========================================================
+    // Note : Cela s'ajoute aux suppressions précédentes.
+    // Une ligne de 4 est gérée ici (suppression standard).
+    
+    // Horizontal
     for (int y = 0; y < LIGNES; y++) {
         for (int x = 0; x < COLONNES - 2; x++) {
             TypeItem type = p->plateau[y][x].type;
             if (type != VIDE && type != MUR) {
                 if (p->plateau[y][x+1].type == type && p->plateau[y][x+2].type == type) {
-                    // On marque les 3 cases
                     p->plateau[y][x].aSupprimer = 1;
                     p->plateau[y][x+1].aSupprimer = 1;
                     p->plateau[y][x+2].aSupprimer = 1;
@@ -77,13 +212,12 @@ int verifierAlignements(Jeu *p) {
         }
     }
 
-    // 2. Vérification Verticale
+    // Vertical
     for (int x = 0; x < COLONNES; x++) {
         for (int y = 0; y < LIGNES - 2; y++) {
             TypeItem type = p->plateau[y][x].type;
             if (type != VIDE && type != MUR) {
                 if (p->plateau[y+1][x].type == type && p->plateau[y+2][x].type == type) {
-                    // On marque les 3 cases
                     p->plateau[y][x].aSupprimer = 1;
                     p->plateau[y+1][x].aSupprimer = 1;
                     p->plateau[y+2][x].aSupprimer = 1;
@@ -100,42 +234,58 @@ void supprimerItems(Jeu *p) {
     for (int i = 0; i < LIGNES; i++) {
         for (int j = 0; j < COLONNES; j++) {
             if (p->plateau[i][j].aSupprimer) {
-                p->plateau[i][j].type = VIDE; // On vide la case
+                TypeItem t = p->plateau[i][j].type;
+                if (t >= 1 && t <= 5) {
+                    p->collecte[t]++;
+                }
+                p->plateau[i][j].type = VIDE;
                 p->plateau[i][j].aSupprimer = 0;
-                p->score += 10; // Gain de points ici
+                p->score += 10;
             }
         }
     }
 }
 
 void appliquerGravite(Jeu *p) {
-    // Pour chaque colonne...
     for (int j = 0; j < COLONNES; j++) {
-        int ecriture = LIGNES - 1; // Position où on doit écrire le prochain item
-
-        // Etape 1 : On fait tomber les items existants
-        // On parcourt la colonne de bas en haut
+        int ecriture = LIGNES - 1;
         for (int lecture = LIGNES - 1; lecture >= 0; lecture--) {
             if (p->plateau[lecture][j].type != VIDE && p->plateau[lecture][j].type != MUR) {
-                // Si on trouve un item, on le place à la position d'écriture (tout en bas possible)
                 p->plateau[ecriture][j].type = p->plateau[lecture][j].type;
-
-                // Si l'item a bougé (lecture != ecriture), on vide l'ancienne case
                 if (ecriture != lecture) {
                     p->plateau[lecture][j].type = VIDE;
                 }
-                ecriture--; // On remonte d'un cran pour le prochain item
+                ecriture--;
             }
             else if (p->plateau[lecture][j].type == MUR) {
-                // Les murs bloquent la gravité, on réinitialise l'écriture au dessus du mur
                 ecriture = lecture - 1;
             }
         }
-
-        // Etape 2 : On remplit les trous restants en haut avec de l'aléatoire
         while (ecriture >= 0) {
             p->plateau[ecriture][j].type = (rand() % 5) + 1;
             ecriture--;
         }
     }
+}
+
+// --- Mise à jour de la sauvegarde pour inclure le SCORE ---
+void sauvegarderPartie(Jeu *p) {
+    FILE *f = fopen("save.txt", "w");
+    if (f) {
+        fprintf(f, "%d %d %d", p->niveauActuel, p->vies, p->score);
+        fclose(f);
+    }
+}
+
+int chargerPartie(Jeu *p) {
+    FILE *f = fopen("save.txt", "r");
+    if (f) {
+        // On essaye de lire 3 valeurs, sinon (vieux fichier) on met score à 0
+        if (fscanf(f, "%d %d %d", &p->niveauActuel, &p->vies, &p->score) < 3) {
+            p->score = 0; 
+        }
+        fclose(f);
+        return 1;
+    }
+    return 0;
 }

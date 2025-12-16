@@ -1,0 +1,35 @@
+# depslib dependency file v1.0
+1765786210 source:c:\users\kylia\documents\cours\informatique\programmes\match-3\jeu.c
+	"jeu.h"
+	<stdlib.h>
+	<time.h>
+	<math.h>
+	<stdio.h>
+
+1765790803 c:\users\kylia\documents\cours\informatique\programmes\match-3\jeu.h
+	<time.h>
+
+1765786241 source:c:\users\kylia\documents\cours\informatique\programmes\match-3\affichage.c
+	<stdio.h>
+	<time.h>
+	"affichage.h"
+
+1765786223 c:\users\kylia\documents\cours\informatique\programmes\match-3\affichage.h
+	"jeu.h"
+	"affichage_console.h"
+
+1756418784 c:\users\kylia\documents\cours\informatique\programmes\match-3\affichage_console.h
+	<windows.h>
+	<conio.h>
+
+1756420708 source:c:\users\kylia\documents\cours\informatique\programmes\match-3\affichage_console.c
+	"affichage_console.h"
+
+1765793834 source:c:\users\kylia\documents\cours\informatique\programmes\match-3\main.c
+	<stdio.h>
+	<stdlib.h>
+	<time.h>
+	"jeu.h"
+	"affichage.h"
+	"affichage_console.h"
+
