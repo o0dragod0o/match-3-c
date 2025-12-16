@@ -5,7 +5,7 @@
 #include "affichage_console.h"
 
 void afficherMenu();
-void afficherRegles(); // Nouveau
+void afficherRegles();
 void afficherJeu(Jeu *p);
 
 #endif
