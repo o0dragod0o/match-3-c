@@ -1,21 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include "jeu.h"
-#include "affichage.h"
+#include <windows.h>
+#include "noyau.h"
+#include "interface.h"
 #include "affichage_console.h"
+#include "physique.h"
+#include "effets.h"
+#include "sauvegarde.h"
+#include "generation_niveau.h"
 
 #define RES_VICTOIRE 1
 #define RES_DEFAITE -1
 #define RES_PAUSE 2
 
-int verifierVictoire(Jeu *p) {
-    for (int i = 1; i <= 5; i++)
-        if ((*p).collecte[i] < (*p).objectifs[i]) return 0;
-    return 1;
-}
-
-// Fonction isolée pour gérer une partie
+// Fonction isolée pour gérer une partie (jouerNiveau)
 int jouerNiveau(Jeu *partie) {
     int niveauTermine = 0;
     clrscr();
@@ -24,47 +23,69 @@ int jouerNiveau(Jeu *partie) {
         afficherJeu(partie);
 
         // Temps & Coups
-        if ((time(NULL) - (*partie).tempsDebut) > (*partie).dureeMax) return RES_DEFAITE;
-        if ((*partie).coupsRestants <= 0) return RES_DEFAITE;
+        if ((time(NULL) - partie->tempsDebut) > partie->dureeMax) return RES_DEFAITE;
+        if (partie->coupsRestants <= 0) return RES_DEFAITE;
         if (verifierVictoire(partie)) return RES_VICTOIRE;
 
-        // Combos
         if (verifierAlignements(partie)) {
-            Sleep(500);
-            supprimerItems(partie);
-            afficherJeu(partie);
-            Sleep(500);
-            appliquerGravite(partie);
+            int iterations = 0;
+            int changed;
+            do {
+                Sleep(250);
+                TypeItem snapshot[LIGNES][COLONNES];
+                for (int si = 0; si < LIGNES; si++) for (int sj = 0; sj < COLONNES; sj++) snapshot[si][sj] = partie->plateau[si][sj].type;
+
+                supprimerItems(partie);
+                afficherJeu(partie);
+                Sleep(250);
+                appliquerGravite(partie);
+
+                changed = 0;
+                for (int si = 0; si < LIGNES && !changed; si++)
+                    for (int sj = 0; sj < COLONNES; sj++)
+                        if (snapshot[si][sj] != partie->plateau[si][sj].type) { changed = 1; break; }
+
+                iterations++;
+                if (iterations > 200) break;
+            } while (verifierAlignements(partie) && changed);
+
+            if (!changed && verifierAlignements(partie)) {
+                for (int i=0;i<LIGNES;i++) for (int j=0;j<COLONNES;j++) partie->plateau[i][j].aSupprimer = 0;
+            }
+
+            // Cascade finished: continue to player input
+
             continue;
         }
 
-        // Input
         if (kbhit()) {
             int t = getch();
             switch(t) {
-                case 'z': case 'Z': if ((*partie).curseurY > 0) (*partie).curseurY--; break;
-                case 's': case 'S': if ((*partie).curseurY < LIGNES - 1) (*partie).curseurY++; break;
-                case 'q': case 'Q': if ((*partie).curseurX > 0) (*partie).curseurX--; break;
-                case 'd': case 'D': if ((*partie).curseurX < COLONNES - 1) (*partie).curseurX++; break;
-                case 27: return RES_PAUSE; // ESC
+                case 'z': case 'Z': if (partie->curseurY > 0) partie->curseurY--; break;
+                case 's': case 'S': if (partie->curseurY < LIGNES - 1) partie->curseurY++; break;
+                case 'q': case 'Q': if (partie->curseurX > 0) partie->curseurX--; break;
+                case 'd': case 'D': if (partie->curseurX < COLONNES - 1) partie->curseurX++; break;
+                case 27: return RES_PAUSE;
 
                 case ' ':
-                    if (!(*partie).aSelectionneUneCase) {
-                        (*partie).plateau[(*partie).curseurY][(*partie).curseurX].estSelectionne = 1;
-                        (*partie).selectX = (*partie).curseurX;
-                        (*partie).selectY = (*partie).curseurY;
-                        (*partie).aSelectionneUneCase = 1;
-                    } else {
-                        // Desélection
-                        if ((*partie).curseurX == (*partie).selectX && (*partie).curseurY == (*partie).selectY) {
-                            (*partie).plateau[(*partie).selectY][(*partie).selectX].estSelectionne = 0;
-                            (*partie).aSelectionneUneCase = 0;
+                    if (!partie->aSelectionneUneCase) {
+                        if (partie->plateau[partie->curseurY][partie->curseurX].type != MUR) {
+                            partie->plateau[partie->curseurY][partie->curseurX].estSelectionne = 1;
+                            partie->selectionX = partie->curseurX;
+                            partie->selectionY = partie->curseurY;
+                            partie->aSelectionneUneCase = 1;
                         }
-                        // Permutation
-                        else if (abs((*partie).curseurX - (*partie).selectX) + abs((*partie).curseurY - (*partie).selectY) == 1) {
-                            permuterItems(partie, (*partie).selectX, (*partie).selectY, (*partie).curseurX, (*partie).curseurY);
-                            (*partie).plateau[(*partie).selectY][(*partie).selectX].estSelectionne = 0;
-                            (*partie).aSelectionneUneCase = 0;
+                    } else {
+                        if (partie->curseurX == partie->selectionX && partie->curseurY == partie->selectionY) {
+                            partie->plateau[partie->selectionY][partie->selectionX].estSelectionne = 0;
+                            partie->aSelectionneUneCase = 0;
+                        }
+                        else if (abs(partie->curseurX - partie->selectionX) + abs(partie->curseurY - partie->selectionY) == 1) {
+                            if (partie->plateau[partie->curseurY][partie->curseurX].type != MUR && partie->plateau[partie->selectionY][partie->selectionX].type != MUR) {
+                                permuterItems(partie, partie->selectionX, partie->selectionY, partie->curseurX, partie->curseurY);
+                            }
+                            partie->plateau[partie->selectionY][partie->selectionX].estSelectionne = 0;
+                            partie->aSelectionneUneCase = 0;
                         }
                     }
                     break;
@@ -76,6 +97,10 @@ int jouerNiveau(Jeu *partie) {
 }
 
 int main() {
+    /* Ensure UTF-8 output once at startup so emojis render correctly */
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
+
     srand((unsigned)time(NULL));
     Jeu partie;
     int choix = 0;
@@ -92,13 +117,13 @@ int main() {
                 partie.score = 0;
                 initialiserJeu(&partie, 1);
             } else {
-                if (!chargerPartie(&partie)) {
-                    printf("\nAucune sauvegarde !"); getch(); continue;
+                int loadRes = chargerPartie(&partie);
+                if (!loadRes) { printf("\nAucune sauvegarde !"); getch(); continue; }
+                if (loadRes == 1) {
+                    int s = partie.score, v = partie.vies;
+                    initialiserJeu(&partie, partie.niveauActuel);
+                    partie.score = s; partie.vies = v;
                 }
-                // Sauvegarde temporaire des stats globales
-                int s = partie.score, v = partie.vies;
-                initialiserJeu(&partie, partie.niveauActuel);
-                partie.score = s; partie.vies = v;
             }
 
             int jeuEnCours = 1;
@@ -107,14 +132,26 @@ int main() {
                 clrscr();
 
                 if (res == RES_VICTOIRE) {
-                    set_color(LIGHTGREEN, BLACK);
-                    printf("\n VICTOIRE ! Niveau %d fini. Score: %d\n", partie.niveauActuel, partie.score);
-                    printf(" [C] Continuer | [Q] Quitter (Sauver)\n Choix: ");
-                    char r; do r=getch(); while(r!='c' && r!='C' && r!='q' && r!='Q');
+                    if (partie.niveauActuel >= 5) {
+                        set_color(LIGHTGREEN, BLACK);
+                        printf("\n FÉLICITATIONS ! Vous avez terminé tous les niveaux. Score final: %d\n", partie.score);
+                        printf("Touche pour retour au menu...");
+                        Sleep(2000);
+                        while (kbhit()) getch();
+                        getch();
+                        jeuEnCours = 0;
+                    } else {
+                        set_color(LIGHTGREEN, BLACK);
+                        printf("\n VICTOIRE ! Niveau %d fini. Score: %d\n", partie.niveauActuel, partie.score);
+                        Sleep(2000);
+                        while (kbhit()) getch();
+                        printf(" [C] Continuer | [Q] Quitter (Sauver)\n Choix: ");
+                        char r; do r=getch(); while(r!='c' && r!='C' && r!='q' && r!='Q');
 
-                    partie.niveauActuel++;
-                    if (r=='q' || r=='Q') { sauvegarderPartie(&partie); jeuEnCours=0; }
-                    else initialiserJeu(&partie, partie.niveauActuel);
+                        partie.niveauActuel++;
+                        if (r=='q' || r=='Q') { sauvegarderPartie(&partie); jeuEnCours=0; }
+                        else initialiserJeu(&partie, partie.niveauActuel);
+                    }
 
                 } else if (res == RES_DEFAITE) {
                     partie.vies--;
