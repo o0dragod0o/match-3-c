@@ -32,7 +32,9 @@ int jouerNiveau(Jeu *partie) {
             do {
                 Sleep(250);
                 TypeItem snapshot[LIGNES][COLONNES];
-                for (int si = 0; si < LIGNES; si++) for (int sj = 0; sj < COLONNES; sj++) snapshot[si][sj] = partie->plateau[si][sj].type;
+                for (int si = 0; si < LIGNES; si++){
+                    for (int sj = 0; sj < COLONNES; sj++) snapshot[si][sj] = partie->plateau[si][sj].type;
+                }
 
                 supprimerItems(partie);
                 afficherJeu(partie);
@@ -40,16 +42,23 @@ int jouerNiveau(Jeu *partie) {
                 appliquerGravite(partie);
 
                 changed = 0;
-                for (int si = 0; si < LIGNES && !changed; si++)
-                    for (int sj = 0; sj < COLONNES; sj++)
-                        if (snapshot[si][sj] != partie->plateau[si][sj].type) { changed = 1; break; }
+                for (int si = 0; si < LIGNES && !changed; si++){
+                    for (int sj = 0; sj < COLONNES; sj++){
+                        if (snapshot[si][sj] != partie->plateau[si][sj].type) {
+                            changed = 1;
+                            break;
+                        }
+                    }
+                }
 
                 iterations++;
                 if (iterations > 200) break;
             } while (verifierAlignements(partie) && changed);//Gérer match en cascade
 
             if (!changed && verifierAlignements(partie)) {
-                for (int i=0;i<LIGNES;i++) for (int j=0;j<COLONNES;j++) partie->plateau[i][j].aSupprimer = 0;
+                for (int i=0;i<LIGNES;i++){
+                    for (int j=0;j<COLONNES;j++) partie->plateau[i][j].aSupprimer = 0;
+                }
             }
 
             continue;
@@ -59,10 +68,22 @@ int jouerNiveau(Jeu *partie) {
             //gere les inputs utilisateur
             int t = getch();
             switch(t) {
-                case 'z': case 'Z': if (partie->curseurY > 0) partie->curseurY--; break;
-                case 's': case 'S': if (partie->curseurY < LIGNES - 1) partie->curseurY++; break;
-                case 'q': case 'Q': if (partie->curseurX > 0) partie->curseurX--; break;
-                case 'd': case 'D': if (partie->curseurX < COLONNES - 1) partie->curseurX++; break;
+                case 'z': case 'Z': if (partie->curseurY > 0){
+                    partie->curseurY--;
+                    break;
+                }
+                case 's': case 'S': if (partie->curseurY < LIGNES - 1) {
+                    partie->curseurY++;
+                    break;
+                }
+                case 'q': case 'Q': if (partie->curseurX > 0) {
+                    partie->curseurX--;
+                    break;
+                }
+                case 'd': case 'D': if (partie->curseurX < COLONNES - 1) {
+                    partie->curseurX++;
+                    break;
+                }
                 case 27: return RES_PAUSE;
 
                 case ' ':
@@ -104,7 +125,10 @@ int main() {
 
     do {
         afficherMenu();
-        if (scanf("%d", &choix) != 1) { while(getchar() != '\n'); choix = 0; }
+        if (scanf("%d", &choix) != 1) {
+            while(getchar() != '\n');
+            choix = 0;
+        }
 
         if (choix == 3) afficherRegles();
         else if (choix == 4) break;
@@ -115,7 +139,10 @@ int main() {
                 initialiserJeu(&partie, 1);
             } else {
                 int loadRes = chargerPartie(&partie);
-                if (!loadRes) { printf("\nAucune sauvegarde !"); getch(); continue; }
+                if (!loadRes) { printf("\nAucune sauvegarde !");
+                    getch();
+                    continue;
+                }
                 
                 // Vérifier si la save est expirée (pas de coups ou temps écoulé)
                 if (partie.coupsRestants <= 0 || (time(NULL) - partie.tempsDebut) > partie.dureeMax) {
@@ -156,10 +183,16 @@ int main() {
                         Sleep(2000);
                         while (kbhit()) getch();
                         printf(" [C] Continuer | [Q] Quitter (Sauvegarder)\n Choix: ");
-                        char r; do r=getch(); while(r!='c' && r!='C' && r!='q' && r!='Q');
+                        char r;
+                        do{
+                            r=getch();
+                        }while(r!='c' && r!='C' && r!='q' && r!='Q');
 
                         partie.niveauActuel++;
-                        if (r=='q' || r=='Q') { sauvegarderPartie(&partie); jeuEnCours=0; }
+                        if (r=='q' || r=='Q') {
+                            sauvegarderPartie(&partie);
+                            jeuEnCours=0;
+                        }
                         else initialiserJeu(&partie, partie.niveauActuel);
                     }
 
@@ -171,8 +204,14 @@ int main() {
                     //enleve une vie
                     if (partie.vies > 0) {
                         printf(" [R] Reessayer | [Q] Quitter (Sauvegarder)\n Choix: ");
-                        char r; do r=getch(); while(r!='r' && r!='R' && r!='q' && r!='Q');
-                        if (r=='q' || r=='Q') { sauvegarderPartie(&partie); jeuEnCours=0; }
+                        char r;
+                        do{
+                            r=getch();
+                        }while(r!='r' && r!='R' && r!='q' && r!='Q');
+                        if (r=='q' || r=='Q') {
+                            sauvegarderPartie(&partie);
+                            jeuEnCours=0;
+                        }
                         else initialiserJeu(&partie, partie.niveauActuel);
                     //plus de vie -> game over
                     } else {
@@ -183,13 +222,21 @@ int main() {
                 //pause
                 } else if (res == RES_PAUSE) {
                     printf("\n PAUSE. Sauver et Quitter ? (O/N) ");
-                    char r; do r=getch(); while(r!='o' && r!='O' && r!='n' && r!='N');
-                    if (r=='o' || r=='O') { sauvegarderPartie(&partie); jeuEnCours=0; }
+                    char r;
+                    do{
+                        r=getch();
+                    }while(r!='o' && r!='O' && r!='n' && r!='N');
+                    if (r=='o' || r=='O') {
+                        sauvegarderPartie(&partie);
+                        jeuEnCours=0;
+                    }
                 }
             }
         }
     } while (choix != 4);
 
-    set_color(WHITE, BLACK); clrscr(); show_cursor();
+    set_color(WHITE, BLACK);
+    clrscr();
+    show_cursor();
     return 0;
 }

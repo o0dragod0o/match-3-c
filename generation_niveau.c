@@ -108,9 +108,11 @@ void initialiserJeu(Jeu *p, int niveau) {
 
     // Suppression des matchs initiaux sans points
     while (verifierAlignements(p)) {
-        for (int i=0; i<LIGNES; i++)
-            for (int j=0; j<COLONNES; j++)
+        for (int i=0; i<LIGNES; i++){
+            for (int j=0; j<COLONNES; j++){
                 if (p->plateau[i][j].aSupprimer) p->plateau[i][j].type = VIDE;
+            }
+        }
         appliquerGravite(p);
     }
 

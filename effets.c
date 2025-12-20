@@ -12,8 +12,9 @@ void marquerToutType(Jeu *p, TypeItem t) {
 
 int verifierAlignements(Jeu *p) {
     int match = 0;
-    for(int i=0; i<LIGNES; i++)
+    for(int i=0; i<LIGNES; i++){
         for(int j=0; j<COLONNES; j++) p->plateau[i][j].aSupprimer = 0;  // Réinitialise les marques
+    }
 
     // Ligne de 6 horizontal
     for (int y=0; y<LIGNES; y++) {
@@ -119,7 +120,9 @@ int verifierAlignements(Jeu *p) {
                 if (cur != JOKER && cur != base) ok = 0;
             }
             if (!ok) continue;
-            for(int dy=0; dy<4; dy++) for(int dx=0; dx<4; dx++) p->plateau[y+dy][x+dx].aSupprimer=1;
+            for(int dy=0; dy<4; dy++){
+                for(int dx=0; dx<4; dx++) p->plateau[y+dy][x+dx].aSupprimer=1;
+            }
             match = 1;
         }
     }
@@ -131,15 +134,26 @@ int verifierAlignements(Jeu *p) {
             TypeItem base = VIDE; int ok = 1;
             for (int k=0;k<3;k++) {
                 TypeItem cur = p->plateau[y][x+k].type;
-                if (cur == MUR || cur == VIDE) { ok = 0; break; }
+                if (cur == MUR || cur == VIDE) {
+                    ok = 0;
+                    break;
+                }
                 if (cur != JOKER && base == VIDE) base = cur;
             }
             if (!ok || base == VIDE) continue;
             for (int k=0;k<3;k++) {
                 TypeItem cur = p->plateau[y][x+k].type;
-                if (cur != JOKER && cur != base) { ok = 0; break; }
+                if (cur != JOKER && cur != base) {
+                    ok = 0;
+                    break;
+                }
             }
-            if (ok) { p->plateau[y][x].aSupprimer = 1; p->plateau[y][x+1].aSupprimer = 1; p->plateau[y][x+2].aSupprimer = 1; match = 1; }
+            if (ok) {
+                p->plateau[y][x].aSupprimer = 1;
+                p->plateau[y][x+1].aSupprimer = 1;
+                p->plateau[y][x+2].aSupprimer = 1;
+                match = 1;
+            }
         }
     }
     for (int x=0; x<COLONNES; x++) {
@@ -148,15 +162,26 @@ int verifierAlignements(Jeu *p) {
             TypeItem base = VIDE; int ok = 1;
             for (int k=0;k<3;k++) {
                 TypeItem cur = p->plateau[y+k][x].type;
-                if (cur == MUR || cur == VIDE) { ok = 0; break; }
+                if (cur == MUR || cur == VIDE) {
+                    ok = 0;
+                    break;
+                }
                 if (cur != JOKER && base == VIDE) base = cur;
             }
             if (!ok || base == VIDE) continue;
             for (int k=0;k<3;k++) {
                 TypeItem cur = p->plateau[y+k][x].type;
-                if (cur != JOKER && cur != base) { ok = 0; break; }
+                if (cur != JOKER && cur != base) {
+                    ok = 0;
+                    break;
+                }
             }
-            if (ok) { p->plateau[y][x].aSupprimer = 1; p->plateau[y+1][x].aSupprimer = 1; p->plateau[y+2][x].aSupprimer = 1; match = 1; }
+            if (ok) {
+                p->plateau[y][x].aSupprimer = 1;
+                p->plateau[y+1][x].aSupprimer = 1;
+                p->plateau[y+2][x].aSupprimer = 1;
+                match = 1;
+            }
         }
     }
     return match;
