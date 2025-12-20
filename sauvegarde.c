@@ -9,7 +9,7 @@ int sauvegarderPartie(Jeu *p) {
     if (!f) return 0;
 
     // En-tête de version pour compatibilité
-    fprintf(f, "MATCH3SAVE v2\n");
+    fprintf(f, "MATCH3SAVE vf\n");
     // Sauvegarde les paramètres et statut joueur
     fprintf(f, "%d %d %d %d %d %lld %d %d %d %d %d %d %d\n",
             p->niveauActuel,
