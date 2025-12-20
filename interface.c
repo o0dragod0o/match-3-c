@@ -14,7 +14,88 @@ void afficherMenu() {
 
 void afficherRegles() {
     clrscr();
-    printf("Règles: Remplacer les symboles pour remplir le contrat. Touche pour continuer...");
+    set_color(LIGHTCYAN, BLACK);
+    printf("╔═══════════════════════════════════════════════════════════════════════════╗\n");
+    printf("║                          🎮 RÈGLES DU JEU 🎮                              ║\n");
+    printf("╚═══════════════════════════════════════════════════════════════════════════╝\n\n");
+    
+    set_color(YELLOW, BLACK);
+    printf("🎯 BUT : ");
+    set_color(WHITE, BLACK);
+    printf("Remplir le contrat en alignant des symboles identiques.\n\n");
+    
+    set_color(YELLOW, BLACK);
+    printf("🕹️  CONTRÔLES :\n");
+    set_color(WHITE, BLACK);
+    printf("   ZQSD   - Déplacer le curseur\n");
+    printf("   ESPACE - Sélectionner/échanger deux symboles adjacents\n");
+    printf("   ESC    - Pause/Menu\n\n");
+    
+    set_color(YELLOW, BLACK);
+    printf("🎲 COMMENT JOUER :\n");
+    set_color(WHITE, BLACK);
+    printf("   1. Déplace le curseur sur un symbole\n");
+    printf("   2. Appuie sur ESPACE pour le sélectionner\n");
+    printf("   3. Déplace le curseur sur un symbole adjacent (haut/bas/gauche/droite)\n");
+    printf("   4. Appuie sur ESPACE pour échanger les deux symboles\n\n");
+    
+    set_color(YELLOW, BLACK);
+    printf("✨ ALIGNEMENTS :\n");
+    set_color(WHITE, BLACK);
+    printf("   3 alignés       - Suppression normale\n");
+    printf("   6 alignés       - Bonus massif (ligne ou colonne)\n");
+    printf("   9+ en croix     - Super bonus (ligne + colonne)\n");
+    printf("   Carré 4×4       - Efface 16 cases d'un coup\n\n");
+    
+    set_color(YELLOW, BLACK);
+    printf("🌟 ITEMS SPÉCIAUX :\n");
+    set_color(LIGHTMAGENTA, BLACK);
+    printf("   🪄 Joker  ");
+    set_color(WHITE, BLACK);
+    printf("- Remplace n'importe quel symbole dans un alignement\n");
+    set_color(LIGHTGRAY, BLACK);
+    printf("   🚧 Mur    ");
+    set_color(WHITE, BLACK);
+    printf("- Se casse si tu supprimes un symbole adjacent\n\n");
+    
+    set_color(YELLOW, BLACK);
+    printf("📋 OBJECTIFS : ");
+    set_color(WHITE, BLACK);
+    printf("Collecte les symboles demandés ");
+    set_color(LIGHTRED, BLACK);
+    printf("🍪");
+    set_color(YELLOW, BLACK);
+    printf("🍫");
+    set_color(BROWN, BLACK);
+    printf("🍬");
+    set_color(LIGHTBLUE, BLACK);
+    printf("🍭");
+    set_color(LIGHTGREEN, BLACK);
+    printf("🍨");
+    set_color(WHITE, BLACK);
+    printf(" et casse les ");
+    set_color(LIGHTGRAY, BLACK);
+    printf("🚧");
+    set_color(WHITE, BLACK);
+    printf(" si nécessaire.\n\n");
+    
+    set_color(LIGHTRED, BLACK);
+    printf("❌ DÉFAITE : ");
+    set_color(WHITE, BLACK);
+    printf("Si tu perds toutes tes vies, si le temps expire, ou si\n");
+    printf("            tu n'as plus de coups.\n\n");
+    
+    set_color(LIGHTGREEN, BLACK);
+    printf("✅ VICTOIRE : ");
+    set_color(WHITE, BLACK);
+    printf("Remplis le contrat avant la fin du temps/coups pour passer\n");
+    printf("             au niveau suivant !\n\n");
+    
+    set_color(DARKGRAY, BLACK);
+    printf("═══════════════════════════════════════════════════════════════════════════\n");
+    set_color(LIGHTCYAN, BLACK);
+    printf("Appuyez sur une touche pour continuer...");
+    set_color(WHITE, BLACK);
     getch();
 }
 
