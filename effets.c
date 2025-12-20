@@ -2,48 +2,69 @@
 #include <stdlib.h>
 
 void marquerToutType(Jeu *p, TypeItem t) {
-    for(int i=0; i<LIGNES; i++)
-        for(int j=0; j<COLONNES; j++)
+    // Marque toutes les cases contenant le type 't' pour suppression (effet wildcard JOKER)
+    for(int i=0; i<LIGNES; i++){
+        for(int j=0; j<COLONNES; j++){
             if(p->plateau[i][j].type == t) p->plateau[i][j].aSupprimer = 1;
+        }
+    }
 }
 
 int verifierAlignements(Jeu *p) {
     int match = 0;
     for(int i=0; i<LIGNES; i++)
-        for(int j=0; j<COLONNES; j++) p->plateau[i][j].aSupprimer = 0;
+        for(int j=0; j<COLONNES; j++) p->plateau[i][j].aSupprimer = 0;  // Réinitialise les marques
 
-    // Ligne de 6 horizontal (with JOKER support)
+    // Ligne de 6 horizontal
     for (int y=0; y<LIGNES; y++) {
         for (int x=0; x<COLONNES; x++) {
             int k = 0; TypeItem base = VIDE;
             for (int nx = x; nx < COLONNES; nx++) {
                 TypeItem cur = p->plateau[y][nx].type;
                 if (cur == MUR || cur == VIDE) break;
-                if (cur == JOKER) { k++; continue; }
-                if (base == VIDE) { base = cur; k++; continue; }
-                if (cur == base) { k++; continue; }
+                if (cur == JOKER) {
+                    k++;
+                    continue;
+                }
+                if (base == VIDE) {
+                    base = cur;
+                    k++;
+                    continue;
+                }
+                if (cur == base) {
+                    k++;
+                    continue;
+                }
                 break;
             }
             if (base != VIDE && k >= 6) {
-                // mark run
                 for (int nx = x; nx < x + k; nx++) p->plateau[y][nx].aSupprimer = 1;
-                // global effect: mark all of base type
                 marquerToutType(p, base);
                 match = 1;
                 x += k - 1;
             }
         }
     }
-    // Vertical (with JOKER support)
+    // Verticale de 6
     for (int x=0; x<COLONNES; x++) {
         for (int y=0; y<LIGNES; y++) {
             int k = 0; TypeItem base = VIDE;
             for (int ny = y; ny < LIGNES; ny++) {
                 TypeItem cur = p->plateau[ny][x].type;
                 if (cur == MUR || cur == VIDE) break;
-                if (cur == JOKER) { k++; continue; }
-                if (base == VIDE) { base = cur; k++; continue; }
-                if (cur == base) { k++; continue; }
+                if (cur == JOKER) {
+                    k++;
+                    continue;
+                }
+                if (base == VIDE) {
+                    base = cur;
+                    k++;
+                    continue;
+                }
+                if (cur == base) {
+                    k++;
+                    continue;
+                }
                 break;
             }
             if (base != VIDE && k >= 6) {
@@ -55,10 +76,10 @@ int verifierAlignements(Jeu *p) {
         }
     }
 
-    // Croix de 9 (with JOKER support)
+    // Croix de 9
     for (int y=2; y<LIGNES-2; y++) {
         for (int x=2; x<COLONNES-2; x++) {
-            // determine base type from center and neighbors (first non-joker)
+            // determine base type
             TypeItem base = VIDE;
             TypeItem checks[] = { p->plateau[y][x].type, p->plateau[y][x-1].type, p->plateau[y][x-2].type, p->plateau[y][x+1].type, p->plateau[y][x+2].type, p->plateau[y-1][x].type, p->plateau[y-2][x].type, p->plateau[y+1][x].type, p->plateau[y+2][x].type };
             int ok = 1;
@@ -67,17 +88,23 @@ int verifierAlignements(Jeu *p) {
                 if (checks[c] != JOKER && base == VIDE) base = checks[c];
             }
             if (!ok || base == VIDE) continue;
-            for (int c=0;c<9;c++) if (checks[c] != JOKER && checks[c] != base) ok = 0;
+            for (int c=0;c<9;c++){
+                if (checks[c] != JOKER && checks[c] != base) ok = 0;
+            }
             if (!ok) continue;
 
-            // mark entire row and column for base or jokers
-            for(int k=0; k<COLONNES; k++) if(p->plateau[y][k].type == base || p->plateau[y][k].type == JOKER) p->plateau[y][k].aSupprimer=1;
-            for(int k=0; k<LIGNES; k++) if(p->plateau[k][x].type == base || p->plateau[k][x].type == JOKER) p->plateau[k][x].aSupprimer=1;
+            // marque la ligne et la colonne
+            for(int k=0; k<COLONNES; k++) {
+                if(p->plateau[y][k].type == base || p->plateau[y][k].type == JOKER) p->plateau[y][k].aSupprimer=1;
+            }
+            for(int k=0; k<LIGNES; k++) {
+                if(p->plateau[k][x].type == base || p->plateau[k][x].type == JOKER) p->plateau[k][x].aSupprimer=1;
+            }
             match = 1;
         }
     }
 
-    // Carre 4x4 (with JOKER support)
+    // Carre 4x4
     for (int y=0; y<=LIGNES-4; y++) {
         for (int x=0; x<=COLONNES-4; x++) {
             TypeItem base = VIDE; int ok = 1;
@@ -97,13 +124,10 @@ int verifierAlignements(Jeu *p) {
         }
     }
 
-
-    // (No special handling for 2x2 squares) 
-
     // Match 3 classique
     for (int y=0; y<LIGNES; y++) {
         for (int x=0; x<COLONNES-2; x++) {
-            // check 3-cell horizontal with JOKER support
+            // Match 3 horizontal
             TypeItem base = VIDE; int ok = 1;
             for (int k=0;k<3;k++) {
                 TypeItem cur = p->plateau[y][x+k].type;
@@ -120,7 +144,7 @@ int verifierAlignements(Jeu *p) {
     }
     for (int x=0; x<COLONNES; x++) {
         for (int y=0; y<LIGNES-2; y++) {
-            // check 3-cell vertical with JOKER support
+            // Match 3 vertical
             TypeItem base = VIDE; int ok = 1;
             for (int k=0;k<3;k++) {
                 TypeItem cur = p->plateau[y+k][x].type;
@@ -139,24 +163,28 @@ int verifierAlignements(Jeu *p) {
 }
 
 int verifierVictoire(Jeu *p) {
-    for (int i = 1; i <= 5; i++)
-        if (p->collecte[i] < p->objectifs[i]) return 0;
-    if (p->objectifMurs > 0 && p->mursCasses < p->objectifMurs) return 0;
-    return 1;
+    // Vérifie si tous les objectifs sont atteints
+        for (int i = COOKIE; i <= GLACE; i++)
+        if (p->collecte[i] < p->objectifs[i]) return 0;  // Manque des bonbons
+    if (p->objectifMurs > 0 && p->mursCasses < p->objectifMurs) return 0;  // Manque des murs cassés
+    return 1;  //objectifs atteints
 }
 
 int permuterItems(Jeu *p, int x1, int y1, int x2, int y2) {
-    if (p->plateau[y1][x1].type == MUR || p->plateau[y2][x2].type == MUR) return 0;
+    if (p->plateau[y1][x1].type == MUR || p->plateau[y2][x2].type == MUR) return 0;  // Pas de swap avec murs
 
+    // Échange temporaire
     TypeItem tmp = p->plateau[y1][x1].type;
     p->plateau[y1][x1].type = p->plateau[y2][x2].type;
     p->plateau[y2][x2].type = tmp;
 
+    // Teste si cet échange crée un match
     if (verifierAlignements(p)) {
-        p->coupsRestants--;
+        p->coupsRestants--;  // Consomme un coup
         return 1;
     }
 
+    // Pas de match : annule l'échange
     tmp = p->plateau[y1][x1].type;
     p->plateau[y1][x1].type = p->plateau[y2][x2].type;
     p->plateau[y2][x2].type = tmp;
@@ -168,13 +196,15 @@ void supprimerItems(Jeu *p) {
         for (int j=0; j<COLONNES; j++) {
             if (p->plateau[i][j].aSupprimer) {
                 TypeItem t = p->plateau[i][j].type;
-                if (t >= 1 && t <= 5) p->collecte[t]++;
+                // Incrémente le compteur de collecte pour ce type
+                if (t >= COOKIE && t <= GLACE) p->collecte[t]++;
 
                 p->plateau[i][j].type = VIDE;
                 p->plateau[i][j].aSupprimer = 0;
                 p->plateau[i][j].estSelectionne = 0;
-                p->score += 10;
+                p->score += 10;  // Gagne 10 points par item supprimé
 
+                // Casse les murs adjacents
                 const int di[4] = {-1,1,0,0};
                 const int dj[4] = {0,0,-1,1};
                 for (int k=0;k<4;k++) {

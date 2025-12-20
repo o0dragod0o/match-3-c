@@ -7,7 +7,7 @@
 #define COLONNES 20
 
 typedef enum {
-    VIDE = 0, FRAISE = 1, OIGNON = 2, MANDARINE = 3, MYRTILLE = 4, CITRON = 5, JOKER = 6, MUR = 99
+    VIDE = 0, COOKIE = 1, CHOCOLAT = 2, BONBON = 3, SUCETTE = 4, GLACE = 5, JOKER = 6, MUR = 99
 } TypeItem;
 
 typedef struct {
@@ -23,7 +23,6 @@ typedef struct {
     int coupsRestants;
     int niveauActuel;
 
-    // Contrat et Temps
     int objectifs[6];
     int collecte[6];
     int objectifMurs;
@@ -32,10 +31,9 @@ typedef struct {
     time_t tempsDebut;
     int dureeMax;
 
-    // Contrôles
     int curseurX, curseurY;
     int aSelectionneUneCase;
     int selectionX, selectionY;
-} Jeu; 
+} Jeu;
 
-#endif // NOYAU_H
+#endif

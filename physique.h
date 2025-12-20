@@ -3,8 +3,7 @@
 
 #include "noyau.h"
 
-// Gravite et glissement diagonal
 void appliquerGravite(Jeu *p);
 int glisserDiagonale(Jeu *p);
 
-#endif // PHYSIQUE_H
+#endif

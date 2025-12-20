@@ -14,7 +14,6 @@
 #define RES_DEFAITE -1
 #define RES_PAUSE 2
 
-// Fonction isolée pour gérer une partie (jouerNiveau)
 int jouerNiveau(Jeu *partie) {
     int niveauTermine = 0;
     clrscr();
@@ -22,7 +21,7 @@ int jouerNiveau(Jeu *partie) {
     while (niveauTermine == 0) {
         afficherJeu(partie);
 
-        // Temps & Coups
+        // Temps et coups
         if ((time(NULL) - partie->tempsDebut) > partie->dureeMax) return RES_DEFAITE;
         if (partie->coupsRestants <= 0) return RES_DEFAITE;
         if (verifierVictoire(partie)) return RES_VICTOIRE;
@@ -47,18 +46,17 @@ int jouerNiveau(Jeu *partie) {
 
                 iterations++;
                 if (iterations > 200) break;
-            } while (verifierAlignements(partie) && changed);
+            } while (verifierAlignements(partie) && changed);//Gérer match en cascade
 
             if (!changed && verifierAlignements(partie)) {
                 for (int i=0;i<LIGNES;i++) for (int j=0;j<COLONNES;j++) partie->plateau[i][j].aSupprimer = 0;
             }
 
-            // Cascade finished: continue to player input
-
             continue;
         }
 
         if (kbhit()) {
+            //gere les inputs utilisateur
             int t = getch();
             switch(t) {
                 case 'z': case 'Z': if (partie->curseurY > 0) partie->curseurY--; break;
@@ -97,7 +95,6 @@ int jouerNiveau(Jeu *partie) {
 }
 
 int main() {
-    /* Ensure UTF-8 output once at startup so emojis render correctly */
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
 
@@ -119,6 +116,16 @@ int main() {
             } else {
                 int loadRes = chargerPartie(&partie);
                 if (!loadRes) { printf("\nAucune sauvegarde !"); getch(); continue; }
+                
+                // Vérifier si la save est expirée (pas de coups ou temps écoulé)
+                if (partie.coupsRestants <= 0 || (time(NULL) - partie.tempsDebut) > partie.dureeMax) {
+                    remove("save.txt");
+                    printf("\nSauvegarde expirée (temps ou coups écoulés). Supprimée.\n");
+                    getch();
+                    continue;
+                }
+                
+                remove("save.txt");
                 if (loadRes == 1) {
                     int s = partie.score, v = partie.vies;
                     initialiserJeu(&partie, partie.niveauActuel);
@@ -131,7 +138,9 @@ int main() {
                 int res = jouerNiveau(&partie);
                 clrscr();
 
+                //victoire
                 if (res == RES_VICTOIRE) {
+                    //si niveau final terminé
                     if (partie.niveauActuel >= 5) {
                         set_color(LIGHTGREEN, BLACK);
                         printf("\n FÉLICITATIONS ! Vous avez terminé tous les niveaux. Score final: %d\n", partie.score);
@@ -141,11 +150,12 @@ int main() {
                         getch();
                         jeuEnCours = 0;
                     } else {
+                        //passer au niveau suivant
                         set_color(LIGHTGREEN, BLACK);
                         printf("\n VICTOIRE ! Niveau %d fini. Score: %d\n", partie.niveauActuel, partie.score);
                         Sleep(2000);
                         while (kbhit()) getch();
-                        printf(" [C] Continuer | [Q] Quitter (Sauver)\n Choix: ");
+                        printf(" [C] Continuer | [Q] Quitter (Sauvegarder)\n Choix: ");
                         char r; do r=getch(); while(r!='c' && r!='C' && r!='q' && r!='Q');
 
                         partie.niveauActuel++;
@@ -153,21 +163,24 @@ int main() {
                         else initialiserJeu(&partie, partie.niveauActuel);
                     }
 
+                //defaite
                 } else if (res == RES_DEFAITE) {
                     partie.vies--;
                     set_color(LIGHTRED, BLACK);
                     printf("\n ECHEC. Vies restantes: %d\n", partie.vies);
+                    //enleve une vie
                     if (partie.vies > 0) {
-                        printf(" [R] Reessayer | [Q] Quitter (Sauver)\n Choix: ");
+                        printf(" [R] Reessayer | [Q] Quitter (Sauvegarder)\n Choix: ");
                         char r; do r=getch(); while(r!='r' && r!='R' && r!='q' && r!='Q');
                         if (r=='q' || r=='Q') { sauvegarderPartie(&partie); jeuEnCours=0; }
                         else initialiserJeu(&partie, partie.niveauActuel);
+                    //plus de vie -> game over
                     } else {
                         printf(" GAME OVER. Score: %d. Touche pour menu...", partie.score);
                         getch();
                         jeuEnCours = 0;
                     }
-
+                //pause
                 } else if (res == RES_PAUSE) {
                     printf("\n PAUSE. Sauver et Quitter ? (O/N) ");
                     char r; do r=getch(); while(r!='o' && r!='O' && r!='n' && r!='N');

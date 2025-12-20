@@ -7,4 +7,4 @@ void afficherMenu();
 void afficherRegles();
 void afficherJeu(Jeu *p);
 
-#endif // INTERFACE_H
+#endif

@@ -1,7 +1,6 @@
 #include "physique.h"
 #include <stdlib.h>
 
-// Try to slide tiles diagonally into empty cells that can't be filled from above due to walls
 int glisserDiagonale(Jeu *p) {
     int moved = 0;
     for (int i = LIGNES - 1; i >= 1; i--) {
@@ -9,8 +8,14 @@ int glisserDiagonale(Jeu *p) {
             if (p->plateau[i][j].type != VIDE) continue;
             int canFromAbove = 0;
             for (int k = i - 1; k >= 0; k--) {
-                if (p->plateau[k][j].type == MUR) { canFromAbove = 0; break; }
-                if (p->plateau[k][j].type != VIDE) { canFromAbove = 1; break; }
+                if (p->plateau[k][j].type == MUR) {
+                    canFromAbove = 0;
+                    break;
+                }
+                if (p->plateau[k][j].type != VIDE) {
+                    canFromAbove = 1;
+                    break;
+                }
             }
             if (canFromAbove) continue;
 
@@ -42,6 +47,7 @@ int glisserDiagonale(Jeu *p) {
 void appliquerGravite(Jeu *p) {
     for (int j=0; j<COLONNES; j++) {
         int w = LIGNES - 1;
+        // Déplace items vers le bas
         for (int r = LIGNES - 1; r >= 0; r--) {
             if (p->plateau[r][j].type == MUR) {
                 w = r - 1;
@@ -58,15 +64,12 @@ void appliquerGravite(Jeu *p) {
             }
         }
         while (w >= 0) {
-            // Choose a random tile but avoid creating immediate 3-in-a-row matches
             int attempt;
             TypeItem chosen = VIDE;
             for (attempt = 0; attempt < 20; attempt++) {
-                // Small chance for a JOKER
+                // joker chance faible
                 TypeItem cand = ((rand() % 100) < 4) ? JOKER : (TypeItem)((rand() % 5) + 1);
-                // vertical check (below) - only avoid creating instant 3 of the same non-joker
                 if (cand != JOKER && w+2 < LIGNES && p->plateau[w+1][j].type == cand && p->plateau[w+2][j].type == cand) continue;
-                // horizontal checks
                 if (cand != JOKER && j >= 2 && p->plateau[w][j-1].type == cand && p->plateau[w][j-2].type == cand) continue;
                 if (cand != JOKER && j+2 < COLONNES && p->plateau[w][j+1].type == cand && p->plateau[w][j+2].type == cand) continue;
                 if (cand != JOKER && j >=1 && j+1 < COLONNES && p->plateau[w][j-1].type == cand && p->plateau[w][j+1].type == cand) continue;
@@ -81,6 +84,7 @@ void appliquerGravite(Jeu *p) {
     }
 
     int iterations = 0;
+    // Permet items de glisser en diagonale si aucun item au dessus
     while (glisserDiagonale(p) && iterations < 100) {
         for (int j=0; j<COLONNES; j++) {
             int w = LIGNES - 1;
